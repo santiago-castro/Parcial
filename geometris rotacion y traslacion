@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Transformaciones</title>
+        <style>
+            html, body { margin: 0; padding: 0; overflow: hidden; }
+            #info {
+                position: absolute;
+                padding: 10px;
+                width: 100%;
+                text-align: center;
+                color: #FFFFFF;
+            }
+        </style>
+    </head>
+    <body>
+		
+        <div id="info">TRANSFORMACIONES<br/>
+            
+            Usar flecha arriba y abajo para trasladar en eje y.<br/>
+			Usar flecha izquierda y derecha para rotar el cubo.<br/>
+            WASD mueve la camara .<br/>
+			"+" aumenta el volumen de la figura y "-" lo disminuye .<br/>
+			Presiona Espacio para mover en el eje X Z usando las teclas.<br/>
+        </div>
+    <script src="js/three.min.js"></script>
+    <script>
+		var scene, aspect, camera, renderer;
+		var geometry;
+		var object;
+		var startTime = Date.now();
+		var zoom=1;
+				
+		var upArrow = false;
+		var downArrow = false;
+		var leftArrow = false;
+		var rightArrow = false;
+		var SpaceBar = false;
+		var W = false;
+		var A = false;
+		var S = false;
+		var D = false;
+		
+		var Plus =false;
+		var Minus=false;
+		var CamR = 0;
+
+		var ux=0;
+		var uy=0;
+		var uz=0;
+
+		
+		init();
+		animate();
+	
+		function init(){
+			
+			scene = new THREE.Scene();
+			aspect = window.innerWidth / window.innerHeight;
+			camera = new THREE.PerspectiveCamera( 45, aspect, 0.1, 1000);
+			camera.zoom=(2);
+			
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+				  			
+			//EVENTOS DE TECLADO
+			
+			var onKeyDown = function ( event ) {
+				switch ( event.keyCode ) {
+					case 32: // ESPACIO
+						if (SpaceBar==false){
+					    SpaceBar = true;
+				        }
+						else{
+					    SpaceBar = false;
+				        }   // PRENDE Y APAGA ESPACIO PARA MOVERLO EN EL EJE X Y
+						break;
+					case 38: // TRASLADAR ADELANTE
+						upArrow = true;
+						break;
+					case 40: // TRASLADAR ATRÁS
+						downArrow = true;
+						break;
+					case 83: // ESCALA AGRANDAR
+						W = true;
+						break;
+					case 87: // ESCALA DISMINUIR
+						S = true;
+						break;
+					case 65: // ESCALA AGRANDAR
+						A = true;
+						break;
+					case 68: // ESCALA DISMINUIR
+						D = true;
+						break;
+					case 37: // ROTAR CW Y MOVER
+						leftArrow = true;
+						break;
+					case 39: // ROTAR CCW Y MOVER
+						rightArrow = true;
+						break;
+					
+					case 107: // ZOOM +
+						Plus = true;
+					break;
+					case 109: // ZOOM -
+						Minus = true;
+					break;
+				}
+			};	  
+		  			
+			var onKeyUp = function ( event ) {
+				switch ( event.keyCode ) {
+					/*case 32: // ESPACIO
+					    SpaceBar = false; // hipotetico WHILE PRESSIO SPACE BAR
+						break;*/
+					case 38: // TRASLADAR
+						upArrow = false;
+						break;
+					case 40: // TRASLADAR
+						downArrow = false;
+						break;
+					case 37: // ROTAR CW
+						leftArrow = false;
+						break;
+					case 39: // ROTAR CCW
+						rightArrow = false;
+						break;
+					case 83: // ESCALA AGRANDAR
+						W = false;
+						break;
+					case 87: // ESCALA DISMINUIR
+						S = false;
+						break;
+					case 65: // ESCALA AGRANDAR
+						A = false;
+						break;
+					case 68: // ESCALA DISMINUIR
+						D = false;
+					case 107: // ZOOM +
+						Plus = false;
+					break;
+					case 109: // ZOOM -
+						Minus = false;
+					break;
+				}
+			};	  	
+			
+			document.addEventListener( 'keydown', onKeyDown, false );
+			document.addEventListener( 'keyup', onKeyUp, false );
+			
+			//ELEMENTOS DE ESCENA
+							  
+			var size = 10;
+			var arrowSize = 1;
+			var divisions = size;
+			var origin = new THREE.Vector3( 0, 0, 0 );
+			var x = new THREE.Vector3( 1, 0, 0 );
+			var y = new THREE.Vector3( 0, 1, 0 );
+		  	var z = new THREE.Vector3( 0, 0, 1 );
+			var color1 = new THREE.Color( 0xFFFFFF );
+		  	var color2 = new THREE.Color( 0x333333 );
+		  	var colorR = new THREE.Color( 0xAA0000 );
+		  	var colorG = new THREE.Color( 0x00AA00 );
+		  	var colorB = new THREE.Color( 0x0000AA );
+			var colorRd = new THREE.Color( 0xAA6666 );
+		  	var colorGd = new THREE.Color( 0x66AA66 );
+		  	var colorBd = new THREE.Color( 0x6666AA );
+		  
+		  	//CREAR LAS GRILLAS PARA EL ESCENARIO
+		  	var axesHelper = new THREE.AxesHelper( size );
+		  	var gridHelperXY = new THREE.GridHelper( size, divisions, color1, color1);
+		  	var gridHelperXZ = new THREE.GridHelper( size, divisions, color2, color2 );
+		  	var gridHelperYZ = new THREE.GridHelper( size, divisions, color2, color2 );
+            
+            //ROTARLAS PARA QUE QUEDEN EN EL ESPACIO ADECUADO
+            gridHelperXY.rotateOnWorldAxis ( x, THREE.Math.degToRad(90) );
+            gridHelperXZ.rotateOnWorldAxis ( y, THREE.Math.degToRad(90) );
+            gridHelperYZ.rotateOnWorldAxis ( z, THREE.Math.degToRad(90) );
+            
+            //CREAR LAS FLECHAS QUE INDICAN LOS EJES DE COORDENADAS 3D
+            var arrowX = new THREE.ArrowHelper( x, origin, arrowSize, colorR );
+            var arrowY = new THREE.ArrowHelper( y, origin, arrowSize, colorG );
+            var arrowZ = new THREE.ArrowHelper( z, origin, arrowSize, colorB );
+			
+			//CREAR LAS GEOMETRÍAS
+			geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			for ( var i = 0; i < geometry.faces.length; i ++ ) {
+				switch(i){
+					case 0: case 1: geometry.faces[ i ].color = colorRd; break;
+					case 2: case 3: geometry.faces[ i ].color = colorRd; break;
+					case 4: case 5: geometry.faces[ i ].color = colorGd; break;
+					case 6: case 7: geometry.faces[ i ].color = colorGd; break;
+					case 8: case 9: geometry.faces[ i ].color = colorBd; break;
+					case 10: case 11: geometry.faces[ i ].color = colorBd; break;
+				}				
+			}
+			
+			//CREAR LOS MATERIALES
+			var material = new THREE.MeshBasicMaterial( { color: color1, vertexColors: THREE.FaceColors } );
+			
+			//CREAR LOS OBJETOS
+			object = new THREE.Mesh( geometry, material );
+									
+		  	//AGREGAR A LA ESCENA
+            scene.add( gridHelperXZ );
+		  	scene.add( arrowX );	
+		  	scene.add( arrowY );	
+		  	scene.add( arrowZ );	
+			scene.add( object );
+			
+			//MOVER LA CAMARA
+			
+			camera.position.x = 5;
+			camera.position.y = 10;	 
+		  	camera.position.z = 10;			
+		  	camera.lookAt( origin );
+			}
+    
+    function animate() {
+        render();
+        requestAnimationFrame( animate );
+    }
+    
+    function render(){
+		
+        var dtime = Date.now()-startTime;
+		var tx=0, ty=0, tz=0;	//Variables para traslacion
+		var sc = 1;				//Variable para escala
+		var theta=0;
+		var alpha=0;			//Variable para ángulo de rotación
+	
+
+		if(upArrow) {             //movimiento hacia arriba
+			tx=0; ty=0.1; tz=0;      
+			if(SpaceBar) { 
+				tx=0; ty=0; tz=-0.1; //movimiento adelante
+			}
+		}
+		if(downArrow) {              //movimiento hacia abajo         
+			tx=0; ty=-0.1; tz=0;
+			if(SpaceBar) { 
+				tx=0; ty=0; tz=0.1; //movimiento atras
+			}
+		}
+	
+	
+	
+		if(Plus){
+			if(SpaceBar==false) {   //cuando espacio esta apagado
+			   alpha = .1;
+			 
+		    }
+			if(SpaceBar) {           
+				sc = 1.1; //escala
+			}
+			
+			
+		}
+		if(Minus){
+			if(SpaceBar==false) {   //cuando espacio esta apagado
+			   alpha = -.1;
+			 
+		    }
+			if(SpaceBar) {           
+				sc = .9; //escala
+			}
+			
+		}
+		if(rightArrow){
+			if(SpaceBar==false) {   //cuando espacio esta apagado
+			   theta = .1;
+			 
+		    }
+			if(SpaceBar) {           // espacio prendido
+				tx=0.1; ty=0; tz=0;
+			}
+		}
+		if(leftArrow){
+			if(SpaceBar==false) { 
+			   theta = -.1;
+		    }
+			if(SpaceBar) { 
+				tx=-0.1; ty=0; tz=0;
+			}
+		}
+		
+		if(W){	
+			if (zoom >0.3)	
+			{zoom-=0.02;}
+		}
+		if(S){		
+			if (zoom < 1.5)
+			{zoom+=0.02;}
+		}
+		if(A){	
+			CamR+=0.1;
+		}
+		if(D){		
+			CamR-=0.1;
+			
+		}
+		
+		
+		//MATRIZ MADRE
+
+		var Madre = new THREE.Matrix4(); //LA MATRIZ AMDRE PERMITE HACER TODOS LOS CAMBIOS USANDO UNA SOLA MATIZ
+		Madre.set( 	sc*Math.cos(theta), 0,                       Math.sin(theta),             tx,
+				     0,                  sc*Math.cos(alpha),     Math.sin(alpha),             ty, 
+				-Math.sin(theta),        -Math.sin(alpha), sc*Math.cos(theta)*(Math.cos(alpha)),  tz,
+				0, 0, 0, 1	);	
+				
+		object.applyMatrix(Madre);
+			
+		object.elementsNeedUpdate = true;
+	 
+		
+		
+		
+        camera.position.x = 10*zoom*Math.sin(CamR);
+		camera.position.y = 10*zoom;
+        camera.position.z = 10*zoom*Math.cos(CamR);
+        
+        camera.lookAt( 0, 0, 0 );
+        renderer.render( scene, camera );
+    }
+    </script>
+  </body>
+</html>
